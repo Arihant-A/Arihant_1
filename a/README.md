@@ -23,7 +23,7 @@
 
 ## Project Overview
 
-This repository documents the complete output of a 12-hour hands-on RTL Design and Synthesis lab conducted as part of the **VSD (VLSI System Design) RTL Design & Synthesis Workshop**. The lab covers the full ASIC front-end design flow:
+This repository documents the complete output of a 12-hour hands-on RTL Design and Synthesis lab conducted as part of the **VSD RTL Design & Synthesis Workshop**. The lab covers the full ASIC front-end design flow:
 
 1. **RTL Coding** — Writing synthesizable Verilog HDL describing the intended hardware behaviour.
 2. **Functional Simulation** — Using **Icarus Verilog (iverilog)** to compile the design alongside a testbench, generating a Value Change Dump (`.vcd`) file.

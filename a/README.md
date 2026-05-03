@@ -23,15 +23,11 @@
 
 ## Project Overview
 
-This repository documents the complete output of a 12-hour hands-on RTL Design and Synthesis lab conducted as part of the **VSD RTL Design & Synthesis Workshop**. The lab covers the full ASIC front-end design flow:
-
-1. **RTL Coding** - Writing synthesizable Verilog HDL describing the intended hardware behaviour.
-2. **Functional Simulation** - Using **Icarus Verilog (iverilog)** to compile the design alongside a testbench, generating a Value Change Dump (`.vcd`) file.
-3. **Waveform Analysis** - Loading the `.vcd` into **GTKWave** to visually inspect and verify signal transitions against the expected truth table / timing requirements.
-4. **Logic Synthesis** - Feeding the RTL into **Yosys** along with the **SkyWater SKY130** standard cell library to produce a gate-level netlist, replacing abstract Verilog operators with real, manufacturable logic cells.
-
-The modules under study deliberately span a spectrum of design patterns - combinational logic, hierarchical design, sequential flip-flops, and arithmetic shortcuts - so that every major synthesis behaviour is exercised and understood.
-
+RTL Coding - writing synthesizable Verilog HDL code to describe the intended behaviour of the hardware design.
+Functional Simulation - compilation of the design and testbench using the Icarus Verilog (iverilog) tool followed by generation of Value Change Dump (.vcd) file.
+Waveform Analysis - viewing the .vcd file in GTKWave environment for visual inspection and validation of waveform signal transitions versus truth table / timing requirements.
+Logic Synthesis - inputting the RTL code together with the SkyWater SKY130 standard cell library into Yosys in order to generate a gate-level netlist (substituting abstract Verilog operators with the corresponding logic cells).
+Design Modules considered during the RTL lab intentionally include different design approaches to cover all possible synthesis aspects.
 ---
 
 ## Why Each File Type Matters

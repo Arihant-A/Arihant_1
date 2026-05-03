@@ -24,10 +24,15 @@
 ## Project Overview
 
 RTL Coding - writing synthesizable Verilog HDL code to describe the intended behaviour of the hardware design.
+
 Functional Simulation - compilation of the design and testbench using the Icarus Verilog (iverilog) tool followed by generation of Value Change Dump (.vcd) file.
+
 Waveform Analysis - viewing the .vcd file in GTKWave environment for visual inspection and validation of waveform signal transitions versus truth table / timing requirements.
+
 Logic Synthesis - inputting the RTL code together with the SkyWater SKY130 standard cell library into Yosys in order to generate a gate-level netlist (substituting abstract Verilog operators with the corresponding logic cells).
+
 Design Modules considered during the RTL lab intentionally include different design approaches to cover all possible synthesis aspects.
+
 ---
 
 ## Why Each File Type Matters

@@ -243,12 +243,6 @@ This screenshot shows the complete 300 ns simulation window with all four signal
 - If `sel = 1`, then the output `y` is an exact replica of `i1` (55 ns toggle).
 - No glitches or undefined states are observed – the transitions of the output are sharp and instantaneous.
 
-**GTKWave Waveform - View 2 (Zoomed):**
-
-![GTKWave Waveform - good_mux (zoomed)](./results/Good_mux_s2.png)
-
-As we zoom into the figure, we will see how the zero propagation delay works in the boundary when there is a change in `sel`. Right at the instant that `sel` changes from 0 to 1, there is a switch in the output signal `y`, from `i0` to `i1`. This is proof that the entire sensitivity list (`@(*)`) works perfectly fine; otherwise, there would be a delay in `y`.
-
 ### 1.3 Synthesis
 
 **Yosys Script and Terminal Output:**
@@ -281,6 +275,11 @@ The terminal output shows:
 - There is no FF, buffer, nor inverter in this circuit, meaning a perfect combinational design.
 
 As a result, we can be sure that the `always @(*) if-else` block was interpreted as a multiplexer (and not a latch).
+**GTKWave Waveform - View 2 (Zoomed):**
+
+![GTKWave Waveform - good_mux (after yosys)](./results/Good_mux_s2.png)
+
+As we zoom into the figure, we will see how the zero propagation delay works in the boundary when there is a change in `sel`. Right at the instant that `sel` changes from 0 to 1, there is a switch in the output signal `y`, from `i0` to `i1`. This is proof that the entire sensitivity list (`@(*)`) works perfectly fine; otherwise, there would be a delay in `y`. Hence we can say we got the same waveform as the previous.
 
 ---
 
@@ -326,7 +325,7 @@ The three inputs are driven at prime-like periods, ensuring all 8 combinations o
 
 ---
 
-### 2.2 Strategy A - Hierarchical Synthesis
+### 2.2 Hierarchical Synthesis
 
 In hierarchical synthesis, Yosys **preserves the module boundaries**. Each sub-module is synthesized as a separate entity, and the top-level netlist instantiates those synthesized sub-modules.
 
@@ -369,7 +368,7 @@ As seen from the hierarchical block diagram, there are:
 - You can have **reusable modules** – you only synthesize a module once and reuse it wherever necessary.
 ---
 
-### 2.3 Strategy B - Flattened Synthesis
+### 2.3 Flattened Synthesis
 
 In flattened synthesis, the `flatten` command is applied **after** synthesis. This merges all module hierarchies into a single, flat netlist - all module boundaries are dissolved, and only primitive cells remain.
 
@@ -419,7 +418,7 @@ The flat block diagram is clearly a **striking difference** compared to the hier
 
 ---
 
-### 2.4 Strategy C - Submodule-Only Synthesis
+### 2.4 Submodule-Only Synthesis
 
 In this strategy, Yosys synthesizes **only a single sub-module** from the file, even though the top-level module exists. This is done by specifying a sub-module as the synthesis top (`-top sub_module1`).
 
@@ -485,7 +484,7 @@ As you can imagine, there are serious differences in timing closure depending on
 
 ---
 
-### 3.1 Variant A - Asynchronous Reset DFF (`dff_asyncres`)
+### 3.1 Asynchronous Reset DFF (`dff_asyncres`)
 
 ```verilog
 // dff_asyncres.v
@@ -552,7 +551,7 @@ The important takeaway from this design step is that no extra logic was added fo
 
 ---
 
-### 3.2 Variant B - Asynchronous Set DFF (`dff_async_set`)
+### 3.2 Asynchronous Set DFF (`dff_async_set`)
 
 ```verilog
 // dff_async_set.v
@@ -601,7 +600,7 @@ The cell created by Yosys is a **`sky130_fd_sc_hd__dfstp_1`**, which is basicall
 
 ---
 
-### 3.3 Variant C - Synchronous Reset DFF (`dff_syncres`)
+### 3.3 Synchronous Reset DFF (`dff_syncres`)
 
 ```verilog
 // dff_syncres.v

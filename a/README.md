@@ -819,5 +819,6 @@ The Boolean satisfiability and BDD optimizations made available by `abc` logic o
 This 12-hour training course involved the entire RTL to gates pipeline, including Verilog HDL programming, functional simulation and waveform observation, technology-mapped synthesis using an open source PDK. The circuits selected for study included the 2:1 multiplexer, hierarchical AND/OR logic, three types of D flip-flops, and zero logic arithmetic, all selected to demonstrate the major synthesis behaviors, namely, MUX inference, hierarchical vs flat netlist design approaches, asynchronous vs synchronous sequential circuits, and arithmetic constant folding. The SKY130 cell library provided the basis for each synthesis result into silicon transistors, making this training relevant to practical chip design and fabrication processes.
 
 ---
+*Workshop completed by: ARIHANT AGARWAL*
 
 *Workshop completed using: Icarus Verilog 11.0 · GTKWave 3.3.104 · Yosys 0.9 · SkyWater SKY130 PDK · Ubuntu 20.04 LTS*

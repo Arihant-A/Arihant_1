@@ -3,6 +3,7 @@
 > **Candidate Assessment Report**
 > **Tools Used:** Icarus Verilog · GTKWave · Yosys · SKY130 PDK
 > **Platform:** GitHub Codespaces (Ubuntu)
+> 
 > **Date:** May 3, 2026
 
 ---

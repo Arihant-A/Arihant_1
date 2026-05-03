@@ -23,6 +23,8 @@
 
 ## Project Overview
 
+This repository documents the complete output of a 12-hour hands-on RTL Design and Synthesis lab conducted as part of the VSD (VLSI System Design) RTL Design & Synthesis Workshop. The lab covers the full ASIC front-end design flow:
+
 RTL Coding - writing synthesizable Verilog HDL code to describe the intended behaviour of the hardware design.
 
 Functional Simulation - compilation of the design and testbench using the Icarus Verilog (iverilog) tool followed by generation of Value Change Dump (.vcd) file.
@@ -54,7 +56,7 @@ design.v + tb_design.v  →  iverilog  →  a.out  →  vvp  →  design.vcd  �
 design.v                →  Yosys + sky130.lib  →  gate_level_netlist.v  +  schematic
 ```
 
-> **Key insight:** Simulation proves the RTL *behaves* correctly. Synthesis proves the RTL *can be built* in silicon. Both steps are mandatory - a design that simulates correctly can still fail synthesis if it contains non-synthesizable constructs (e.g., delays `#`, `initial` blocks in the DUT, etc.).
+> **Key insight:** RTL Simulation is proof that the RTL "works." RTL Synthesis is proof that the RTL "builds." These two operations are essential; the RTL can simulate successfully but not synthesize due to the presence of non-synthesizable elements (for example, #, initial statements in the DUT, etc.)
 
 ---
 
@@ -70,10 +72,10 @@ The testbench is **not synthesized** - it exists purely to drive stimulus into t
 
 ### GTKWave
 
-GTKWave is a waveform viewer that reads `.vcd` files. It lets the engineer visually confirm:
-- That output signals change at the correct time relative to clock edges.
-- That asynchronous events (resets, sets) override clock-synchronous behaviour immediately.
-- That combinational outputs respond instantaneously to input changes.
+GTKWave is a waveform viewer program which accepts `.vcd` files. This allows the engineer to verify visually:
+- That the output waveforms toggle when expected based on clock edges.
+- That non-synchronous behavior (resetting, setting) takes precedence over synchronous behavior.
+- That combinational outputs change instantly upon change in inputs.
 
 ### Yosys Open Synthesis Suite
 
@@ -206,10 +208,10 @@ endmodule
 
 **Code Walkthrough:**
 
-- `always @ (*)` - The `*` is a wildcard sensitivity list. It tells the simulator: "re-evaluate this block whenever *any* input signal changes." This is the correct and recommended way to write combinational logic in Verilog. A common mistake is writing `always @ (sel)` which would miss changes on `i0` and `i1`, creating simulation-synthesis mismatch.
-- `output reg y` - Even though the MUX is combinational, `y` is declared as `reg` because it is assigned inside an `always` block. This does **not** mean a flip-flop will be inferred - the `always @(*)` prevents that. Yosys will correctly synthesize this as a pure combinational path.
-- The logic is a simple **if-else** which Verilog synthesis tools universally map to a MUX cell. The name "good_mux" itself is pedagogical - it contrasts against a "bad_mux" (not in this lab) that uses an incomplete sensitivity list.
-
+- `always @ (*)` – The `*` denotes a wildcard sensitivity list, telling the simulator to evaluate the block whenever there is any change on its inputs. This is the right way to code combinational logic in Verilog; it is generally wrong to write `always @ (sel)` as it ignores changes on `i0` and `i1`, resulting in a simulation/synthesis mismatch.
+- `output reg y` – Despite the multiplexer being combinational, `y` is defined as `reg` since it is assigned inside an `always` block. However, this **does not** imply that a flip-flop will be inferred due to the use of `always @(*)`. Yosys will infer a pure combinational path from this Verilog description.
+- The logic in this example follows a simple **if-else** statement which is mapped to a MUX by all Verilog synthesis tools. The module name `good_mux` has a didactic purpose here, distinguishing it from a `bad_mux` (not shown in this lab) using an incomplete sensitivity list.
+- 
 **Testbench Walkthrough (`tb_good_mux.v`):**
 
 ```verilog
@@ -219,7 +221,7 @@ always #10  i0  = ~i0;   // i0 changes every 10 ns (fastest toggle)
 always #55  i1  = ~i1;   // i1 changes every 55 ns
 ```
 
-The testbench drives all three inputs independently at different frequencies to create a rich, interleaved set of transitions. This maximises code coverage and ensures that every combination of `{sel, i0, i1}` is exercised within the 300 ns window. The `$dumpfile` and `$dumpvars(0, tb_good_mux)` calls capture all signals (depth 0 = all hierarchy) to `tb_good_mux.vcd`.
+Test Bench generates all three inputs with different frequencies. This results in generating an extensive range of transitions. It also makes sure that every combination of `{sel, i0, i1}` gets covered in the 300 ns window. All the signals are dumped with the following commands `$dumpfile` and `$dumpvars(0, tb_good_mux)`.
 
 ### 1.2 Simulation
 
@@ -237,15 +239,15 @@ The terminal confirms the two-step simulation workflow:
 
 This screenshot shows the complete 300 ns simulation window with all four signals - `sel`, `i0`, `i1`, and `y` - plotted. Key observations:
 
-- When `sel = 0`, the output `y` perfectly mirrors `i0` (the 10 ns toggle pattern).
-- When `sel = 1`, the output `y` follows `i1` (the 55 ns toggle pattern).
-- There are **no glitches or undefined states** - the output transitions are clean and immediate, confirming purely combinational behaviour.
+- If `sel = 0`, then the output `y` is an exact replica of `i0` (10 ns toggle).
+- If `sel = 1`, then the output `y` is an exact replica of `i1` (55 ns toggle).
+- No glitches or undefined states are observed – the transitions of the output are sharp and instantaneous.
 
 **GTKWave Waveform - View 2 (Zoomed):**
 
 ![GTKWave Waveform - good_mux (zoomed)](./results/Good_mux_s2.png)
 
-Zooming in reveals the zero-propagation-delay behaviour at the boundary where `sel` transitions. At the exact moment `sel` rises from 0 to 1, `y` switches from tracking `i0` to tracking `i1` without any intermediate undefined (`X`) state. This validates the complete sensitivity list (`@(*)`) - had the sensitivity list been incomplete, `y` would have lagged or produced an incorrect value at the transition point.
+As we zoom into the figure, we will see how the zero propagation delay works in the boundary when there is a change in `sel`. Right at the instant that `sel` changes from 0 to 1, there is a switch in the output signal `y`, from `i0` to `i1`. This is proof that the entire sensitivity list (`@(*)`) works perfectly fine; otherwise, there would be a delay in `y`.
 
 ### 1.3 Synthesis
 
@@ -265,20 +267,20 @@ write_verilog -noattr good_mux_netlist.v
 
 The terminal output shows:
 
-- `Executing SYNTH pass` - Yosys runs multiple internal optimization passes: `PROC` (converts procedural `always` blocks to combinational logic), `OPT` (constant folding and dead code elimination), `TECHMAP` (maps to generic gates), and `ABC` (technology mapping to SKY130 cells).
-- After `abc`, the statistics show **1 MUX cell** from the SKY130 library was inferred - this is exactly the expected result for a 2:1 MUX.
-- The key statistic to look for: `Number of cells: 1` - confirming Yosys produced the most minimal possible implementation.
-
+- `Executing SYNTH pass` - Yosys performs a series of internal optimizations including `PROC` (procedural `always` blocks conversion into combinational logic), `OPT` (constant folding and dead code removal), `TECHMAP` (gate synthesis), and `ABC` (technology mapping into SKY130 cells).
+- Post `abc` optimization stage, the generated statistics reveal that **one MUX cell** has been inferred from the SKY130 cell library - which is precisely what should be expected in case of a 2:1 MUX.
+- Most important statistic: `Number of cells: 1` - proving that Yosys succeeded in generating an optimal solution.
+- 
 **Logic (Block) Diagram:**
 
 ![Block Diagram - good_mux after synthesis](./results/Good_mux_bd.png)
 
-The Yosys `show` command renders the synthesized schematic. The diagram shows:
-- Three primary inputs: `i0`, `i1`, `sel` feeding into a single **`sky130_fd_sc_hd__mux2_1`** cell.
-- One output `y` driven directly by the MUX cell output.
-- No flip-flops, no buffers, no inverters - a perfectly clean combinational mapping.
+`Yosys show` is used to visualize the synthesis schematic. It consists of:
+- 3 input pins (`i0`, `i1`, `sel`) connected to a single instance of the **`sky130_fd_sc_hd__mux2_1`** gate.
+- Only one output pin `y` driven by the output pin of MUX.
+- There is no FF, buffer, nor inverter in this circuit, meaning a perfect combinational design.
 
-This confirms that the `always @(*) if-else` construct was correctly recognized as a MUX, not inferred as a latch (which would occur if the `else` branch were missing).
+As a result, we can be sure that the `always @(*) if-else` block was interpreted as a multiplexer (and not a latch).
 
 ---
 
@@ -343,7 +345,7 @@ show
 write_verilog -noattr multiple_modules_hier.v
 ```
 
-The terminal output shows that Yosys first synthesizes each sub-module independently, then synthesizes the top module treating the sub-modules as black boxes. You can observe separate statistics for `sub_module1` and `sub_module2` in the synthesis log.
+As can be seen from the output from the terminal, Yosys performs synthesis on the sub-modules separately first, and then performs the synthesis on the top module with the sub-modules treated as black boxes.
 
 **Yosys Output:**
 
@@ -353,19 +355,18 @@ The terminal output shows that Yosys first synthesizes each sub-module independe
 
 ![Block Diagram - multiple_modules (hierarchical)](./results/multiple_modules_bd.png)
 
-The hierarchical block diagram clearly shows:
-- Two distinct **sub-module boxes** (`u1` and `u2`) with their module names visible.
-- `u1` (sub_module1) is shown as a single AND gate cell.
-- `u2` (sub_module2) is shown as a single OR gate cell.
-- The intermediate wire `net1` is visible connecting `u1`'s output to `u2`'s first input.
-- The module hierarchy is **preserved** - you can trace exactly which physical cell belongs to which Verilog module instance.
+As seen from the hierarchical block diagram, there are:
+- Two sub-module boxes (`u1` and `u2`) with module names clearly specified.
+- Sub-module `u1` (sub_module1) implemented by using a single AND gate cell.
+- Sub-module `u2` (sub_module2) implemented using a single OR gate cell.
+- Intermediate wire `net1` connecting `u1`'s output to the first input of `u2`.
+- Module hierarchy **retained**, and you know exactly which cell corresponds to which Verilog module instantiation.
 
-**Why Use Hierarchical Synthesis?**
-- Enables **incremental synthesis** - if only one sub-module changes, only that sub-module needs re-synthesis.
-- Essential for **IP protection** - pre-synthesized sub-modules can be delivered as encrypted netlists.
-- Facilitates **team-based design** - multiple engineers can own different sub-modules.
-- Enables **module reuse** - a single synthesized sub-module can be instantiated multiple times without re-synthesizing.
-
+**Advantages of Using Hierarchical Synthesis**
+- It supports **incremental synthesis** – you need to synthesize only those sub-modules that change.
+- It becomes essential for protecting IP – your pre-synthesized sub-modules can be supplied in an encrypted netlist form.
+- Allows for **multi-engineer** designs – more than one engineer can work on designing each sub-module.
+- You can have **reusable modules** – you only synthesize a module once and reuse it wherever necessary.
 ---
 
 ### 2.3 Strategy B - Flattened Synthesis
@@ -395,11 +396,11 @@ write_verilog -noattr multiple_modules_flat.v
 
 ![Block Diagram - multiple_modules (flattened)](./results/multiple_modules_fla_bd.png)
 
-The flattened block diagram shows a **stark contrast** to the hierarchical version:
-- There are **no sub-module boxes** - the module boundaries have completely disappeared.
-- What was `u1` and `u2` are now just two anonymous standard cells: an AND cell and an OR cell connected directly in a flat graph.
-- The intermediate wire `net1` is still present logically, but it's now just a net between two primitive cells rather than a named inter-module connection.
-- The visual representation is more like a direct gate-level schematic.
+The flat block diagram is clearly a **striking difference** compared to the hierarchical block diagram:
+- No boxes for the **sub-module blocks** exist; the module divisions have been completely removed.
+- Instead of `u1` and `u2`, there are only two unnamed primitive blocks: an AND block and an OR block wired up in a flat graph.
+- The intermediary wire `net1` remains logically in place, but it is no longer a named connection between modules; rather, it is a net connecting two primitive blocks.
+- The overall depiction resembles a gate-level schematic view.
 
 **Hierarchical vs. Flattened - Side-by-Side Comparison:**
 
@@ -449,13 +450,12 @@ The submodule block diagram shows **only** `sub_module1` (the AND gate). The OR 
 - One `sky130_fd_sc_hd__and2_1` cell.
 - One output: `y`.
 
-**Why Synthesize Only a Submodule?**
-This technique is used in real industry flows when:
-- A design is too large to synthesize as a whole unit and needs to be broken into independently synthesizable partitions.
-- A specific sub-module is suspected of having synthesis issues and needs to be isolated for debugging.
-- A module is used in multiple different top-level designs - a single synthesized sub-module can be dropped into any of them.
-- Generating individual IP blocks for third-party delivery.
-
+**Why Isolate and Synthesize Only a Submodule?**
+Such an approach is employed during the process of real industrial design flows if:
+- The design size is too great to fit into synthesis in a single block, requiring partitioning into independently synthesizable blocks.
+- There is a possibility that the submodule might have problems during synthesis, requiring it to be singled out for investigation.
+- The same module is being utilized in various top-level designs, which means that only one synthesized sub-module can be employed in all top designs.
+- Development of separate IP cores.
 ---
 
 ### 2.5 Simulation
@@ -472,16 +472,16 @@ The output `y` in simulation should implement `y = (a & b) | c`. Checking a few 
 
 ## D Flip-Flops (Three Reset/Set Variants)
 
-Sequential logic synthesis is fundamentally different from combinational synthesis. Flip-flops represent **state** in a design - they remember a value across clock cycles. How the flip-flop initializes or resets to a known state is a critical design decision. This lab explores all three major variants.
+Sequential logic synthesis is entirely different from combinational synthesis. A flip-flop represents **STATE** in the design – it holds its value between clock cycles. The initialization or reset of the flip-flop is one of the important decisions made in the design. This experiment studies three cases.
 
-### Why DFFs Matter in Synthesis
+### Why DFFs are Important in Synthesis
 
-When Yosys encounters a `reg` inside an `always @(posedge clk)` block, it must infer a flip-flop. The **exact cell chosen** from the SKY130 library depends on the type of control signal present:
+Whenever Yosys finds a `reg` declaration within `always @(posedge clk)` code block, it understands that it needs a flip-flop. The **type of cell chosen from the SKY130 library** will depend on the control signal in the design:
 
-- **Asynchronous reset/set** → The control signal appears in the `always @ (posedge clk, posedge reset)` sensitivity list → Yosys maps to a cell with an asynchronous reset/set pin (e.g., `dfrtp`, `dfstp`).
-- **Synchronous reset** → The control signal is only checked inside the `if` block triggered by the clock → Yosys maps to a plain DFF cell with extra AND/OR logic at the input.
+- **Asynchronous reset/set** → The control signal is included in the sensitivity list `always @ (posedge clk, posedge reset)` → Yosys chooses a cell with asynchronous pins (reset/set) like `dfrtp`, `dfstp`.
+- **Synchronous reset** → The control signal is checked only inside the `if` block of `posedge clk` → Yosys chooses DFF with extra logic in the inputs.
 
-This difference has profound implications for timing closure in real chips - asynchronous resets are clock-independent but require careful CDC (Clock Domain Crossing) handling, while synchronous resets are easier to time but occupy more combinational logic.
+As you can imagine, there are serious differences in timing closure depending on the choice here – asynchronous resets do not depend on the clock, while synchronous resets are easy to time but use more combinational logic.
 
 ---
 

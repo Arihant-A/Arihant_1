@@ -502,10 +502,10 @@ endmodule
 
 **Code Walkthrough:**
 
-- `always @ (posedge clk, posedge async_reset)` - Two events in the sensitivity list. This is the Verilog idiom for **asynchronous control**. The block executes on every rising clock edge AND on every rising edge of `async_reset` - independently.
-- `if (async_reset) q <= 1'b0` - When `async_reset` goes high, `q` is **immediately** forced to 0 without waiting for a clock edge. This is the definition of "asynchronous" - the reset is independent of the clock.
-- `else q <= d` - On a normal rising clock edge (when `async_reset` is low), `q` captures the value of `d`.
-
+- `always @(posedge clk, posedge async_reset)` - Two conditions listed in the sensitivity list. This is an example of **asynchronous control** in Verilog.
+- `if (async_reset) q <= 1'b0` - If `async_reset` occurs, `q` will be **instantly** set to 0 and not have to wait for a clock signal. This is what asynchronous means - it occurs irrespective of the clock.
+- `else q <= d` - If a normal rising clock signal occurs (without `async_reset` being high), `q` takes the value of `d`.
+  
 **Testbench Stimulus:**
 
 ```verilog
@@ -532,7 +532,7 @@ The waveform shows the full 3000 ns simulation. Key observations:
 
 ![GTKWave - dff_asyncres (zoomed)](./results/async_res_s2.png)
 
-The zoomed view is the critical evidence. It shows the exact moment `async_reset` goes high. The cursor clearly shows `q` changing to 0 **synchronous with the async_reset edge**, with zero dependence on the `clk` edge position. This is the defining characteristic of asynchronous reset - the reset edge itself is the trigger.
+The zoomed view is the crucial piece of evidence. Here, the precise time that `async_reset` becomes `1` is seen. The cursor marks the point at which `q` switches from `1` to `0`, perfectly in sync with the rising edge of the `async_reset` signal, without any reliance on the `clk` edge timing.
 
 **Yosys Synthesis Output:**
 
@@ -542,13 +542,13 @@ The zoomed view is the critical evidence. It shows the exact moment `async_reset
 
 ![Block Diagram - dff_asyncres](./results/async_res_bd.png)
 
-Yosys maps this to a **`sky130_fd_sc_hd__dfrtp_1`** cell - a D Flip-Flop with **asynchronous active-high Reset** (the `r` in `dfrtp` = reset, `t` = true/active-high). The block diagram shows:
-- The `D` pin connected to input `d`.
-- The `CLK` pin connected to `clk`.
-- The **`RESET_B` pin** (active-low in the cell, but Yosys inserts an inverter) connected to `async_reset`.
-- The `Q` pin driving output `q`.
+This is implemented using a **`sky130_fd_sc_hd__dfrtp_1`** cell, which is a D Flip-Flop having **Asynchronous Active-High Reset** (`r`=reset, `t`=true/active-high). The block diagram depicts the following:
+- `D` connected to input `d`
+- `CLK` connected to `clk`
+- **`RESET_B`** (active-low on the cell, but an inverter is inserted by Yosys) to `async_reset`
+- `Q` driving output `q`
 
-The key synthesis insight: no additional logic was added. The reset functionality is **built into the flip-flop cell itself**, which is why asynchronous resets are area-efficient.
+The important takeaway from this design step is that no extra logic was added for the asynchronous reset functionality; instead, the functionality was inherent to the flip-flop **cell itself**.
 
 ---
 
@@ -569,11 +569,11 @@ endmodule
 
 **Code Walkthrough:**
 
-This module is structurally identical to `dff_asyncres` with two key differences:
-- The control signal is named `async_set`.
-- On assertion, `q` is forced to `1'b1` (logic HIGH) instead of `1'b0`. This is a **set** operation rather than a **reset** operation.
+This module has an exact structural equivalence with `dff_asyncres` except for the following differences:
+- The control variable is called `async_set`.
+- When asserted, the value of `q` is forced to `1'b1` (or logic HIGH).
 
-This distinction matters for initialization: resets drive a known low state (common for counters, FSMs), while sets drive a known high state (common for priority signals, active-low enables).
+The importance of this lies on how the reset works: resets provide a certain LOW level (typical when initializing counters and FSM states), whereas a set will provide a certain HIGH level (priority and active low signals, typically).
 
 **Terminal Output:**
 
@@ -597,7 +597,7 @@ The zoomed waveform now shows that when `async_set` goes high, `q` immediately *
 
 ![Block Diagram - dff_async_set](./results/async_set_bd.png)
 
-Yosys maps this to a **`sky130_fd_sc_hd__dfstp_1`** cell - a D Flip-Flop with **asynchronous active-high Set**. The `s` in `dfstp` = set. The block diagram structure is identical to the reset variant, but the control pin is now `SET_B` (active-low set, with Yosys inserting an inverter for the active-high `async_set` input). This confirms that Yosys correctly distinguishes between set and reset semantics during cell selection.
+The cell created by Yosys is a **`sky130_fd_sc_hd__dfstp_1`**, which is basically a D Flip-Flop having **an asynchronous active-high Set** feature. In the suffix `dfstp`, the letter `s` means set. The structure of this block diagram is similar to the one with reset, except for the control pin, which becomes `SET_B` (active-low set, using an inverter from active-high `async_set`).
 
 ---
 
@@ -618,11 +618,11 @@ endmodule
 
 **Code Walkthrough:**
 
-- `always @ (posedge clk)` - **Only one event** in the sensitivity list: the rising clock edge. This means the `always` block can **only execute on a clock edge**. Everything inside happens synchronously.
-- `if (sync_reset)` - The `sync_reset` signal is checked, but only when the clock edge fires. If `sync_reset` goes high mid-cycle, `q` does **not** change until the next rising clock edge.
-- This is the fundamental difference: synchronous reset is clock-gated. The flip-flop ignores the reset signal between clock edges.
+- `always @ (posedge clk)` - Only **one event** in the sensitivity list: the positive edge of the clock. Hence, the `always` block **can run only on the clock edge**. All actions take place synchronously.
+- `if (sync_reset)` - The `sync_reset` signal is examined, but only during the clock edge. Even if `sync_reset` becomes active in the middle of the cycle, the value of `q` changes only after the next rising clock edge.
+- This is the core distinction: the synchronous reset works clock-enabled. The flop ignores the reset signal outside the clock edges.
 
-> **Important Note:** Despite the port name `async_reset` in the port list, the module logic implements **synchronous** reset because it only appears inside `always @(posedge clk)` and not in the sensitivity list. The testbench correctly drives `sync_reset` (not `async_reset`), highlighting this naming inconsistency - a real-world code review would flag this.
+> **Important Note:** While the port declaration contains `async_reset`, the internal structure realizes **synchronous** reset since it is specified within `always @(posedge clk)` but not in the sensitivity list. In practice, the testbench properly applies `sync_reset` (rather than `async_reset`).
 
 **Terminal Output:**
 
@@ -636,7 +636,7 @@ endmodule
 
 ![GTKWave - dff_syncres (zoomed)](./results/sync_res_s2.png)
 
-The zoomed waveform is the definitive proof of synchronous behaviour. Notice that when `sync_reset` asserts, `q` does **not** immediately go to 0. Instead, it waits for the **next rising clock edge** before transitioning to 0. This one-cycle latency distinguishes synchronous reset from asynchronous reset - both waveforms should be studied side-by-side to appreciate the timing difference.
+Zoomed waveform is the final piece of evidence that confirms that the operation is synchronous in nature. Observe that the value of `q` is not set to zero immediately when the signal `sync_reset` becomes true. Rather, it takes the next clock rise edge to change its value to zero.
 
 **Yosys Synthesis Output:**
 
@@ -646,12 +646,12 @@ The zoomed waveform is the definitive proof of synchronous behaviour. Notice tha
 
 ![Block Diagram - dff_syncres](./results/sync_res_bd.png)
 
-This block diagram reveals a **fundamentally different synthesis result** compared to the async variants:
-- Yosys uses a **plain DFF** (`sky130_fd_sc_hd__dfxtp_1`) - no built-in reset pin at all.
-- The `sync_reset` signal is implemented as **extra combinational logic** at the DFF's `D` input: a MUX that selects between `d` and `1'b0` based on `sync_reset`.
-- The synthesis result is: `D_input = (sync_reset) ? 1'b0 : d`, which is then clocked into the plain DFF.
-- This costs one extra MUX cell compared to the asynchronous variants, demonstrating that synchronous reset uses slightly more area.
-
+This block diagram shows a **totally different synthesis outcome** from the asynchronous counterparts:
+- Yosys employs a **simple DFF** (`sky130_fd_sc_hd__dfxtp_1`), with no dedicated reset pin.
+- The `sync_reset` functionality comes from an **additional combinational circuitry** on the `D` input of the DFF, namely a MUX choosing between `d` and `1'b0` according to `sync_reset`.
+- The result is: `D_input = (sync_reset) ? 1'b0 : d`, feeding into the simple DFF.
+- This consumes just one more MUX cell than the asynchronous counterparts, showing that synchronous reset requires more area.
+  
 **Three-Way DFF Comparison:**
 
 | Feature | Async Reset | Async Set | Sync Reset |
@@ -759,7 +759,7 @@ The terminal confirms `Number of cells: 0`. Yosys recognized the `a * 9` as `{a,
 
 ![Block Diagram - mult8](./results/mul8_bd.png)
 
-The block diagram shows `a[2:0]` mapped to both `y[5:3]` and `y[2:0]` via direct wires - the 3-bit input is fanned out twice to form the 6-bit output. This elegantly demonstrates that synthesis tools perform **constant folding and algebraic simplification** far beyond what a naive gate-mapping would achieve.
+As depicted by the block diagram above, `a[2:0]` is directly connected to `y[5:3]` and `y[2:0]`, meaning that the 3-bit input signal is replicated twice to generate the 6-bit output. This clearly illustrates the fact that the synthesis process is capable of performing **constant folding and algebraic reduction** much more effectively than expected.
 
 **Multiply by 2 vs. Multiply by 9 Comparison:**
 
@@ -790,35 +790,34 @@ The block diagram shows `a[2:0]` mapped to both `y[5:3]` and `y[2:0]` via direct
 | **Latch Warning** | Simulation won't warn | Yosys warns: "Inferred latch for signal Y" |
 | **What It Proves** | Correct logical behaviour | Correct synthesizability and minimal gate count |
 
-> **Golden Rule of RTL Design:** A design that simulates correctly is not guaranteed to synthesize correctly. Always run both flows and compare. A mismatch between simulation and synthesis behaviour indicates either a non-synthesizable construct in the RTL or a simulation-synthesis mismatch (SSM) - a common source of silicon bugs.
+> **Golden Rule for RTL Design:** Just because something simulates doesn’t mean it will work in synthesis. Always simulate and synthesize. A difference between the simulation and synthesis results means one of two things, either there’s something non-synthesizable in the RTL code or there’s an SSM problem.
 
 ### Optimization Using SKY130
 
 The SKY130 standard cell library teaches us that **synthesis is not just translation** - it is optimization. Key observations from this lab:
-
-**1. Cell Selection Based on Semantics:**
-Yosys does not blindly map every flip-flop to the same cell. It reads the RTL semantics and selects the most appropriate cell:
-- Async reset → `dfrtp_1` (has dedicated reset pin)
-- Async set → `dfstp_1` (has dedicated set pin)
-- Sync reset → `dfxtp_1` + combinational MUX
+**1. Selecting Cells from Semantics:**
+Not all flip-flops will be mapped by Yosys to the same cell type. Yosys will infer the best suited cell based on the RTL semantics as follows:
+- Async reset -> `dfrtp_1` (with an asynchronous reset pin)
+- Async set -> `dfstp_1` (with an asynchronous set pin)
+- Sync reset -> `dfxtp_1` + combinatorial MUX
 
 **2. Zero-Gate Arithmetic:**
-For `mul2` and `mult8`, Yosys performs algebraic simplification before technology mapping. The synthesis engine understands that `a * 2` is a left-shift and represents it as wire connections, producing a **zero-cell, zero-area, zero-power** implementation. This is a capability that hand-instantiated gate netlists would miss.
+Yosys performs algebraic optimization before the technology mapping stage for `mul2` and `mult8`. Yosys knows that `a * 2` can be implemented with a left-shift, which will be represented with wire connections, and hence will result in a **zero gate/ zero area/zero power implementation** of the functionality.
 
 **3. MUX Inference:**
-The `good_mux` `always @(*) if-else` construct is correctly recognized as a 2:1 MUX and mapped to `sky130_fd_sc_hd__mux2_1` - not decomposed into AND-OR-INVERT logic. This is the "good_mux" lesson: proper coding style leads to proper cell inference.
+The `good_mux` statement with its `always @( *) if-else` statement is properly inferred as a two-to-one multiplexer and mapped as such. There is no logic decomposition of the `good_mux` to AND/OR/INVERT gates but instead directly mapped to `sky130_fd_sc_hd__mux2_1`.
 
-**4. Hierarchy vs. Flatten Trade-off:**
-For the `multiple_modules` design, both hierarchical and flat synthesis produced the same gate count (2 cells). In larger, optimizable designs, flattening enables cross-boundary constant propagation that can dramatically reduce cell count - but at the cost of synthesis runtime and debuggability.
+**4. Flattening vs Hierarchy:**
+In the case of the `multiple_modules`, the flattened version and hierarchical version generated the same number of gates (2 cells). However, in larger and more optimizeable circuits, flattening makes it possible to perform cross-module constant propagation, which can drastically cut the cell count, although with the expense of slower synthesis and reduced debugging capabilities.
 
-**5. The Role of `abc`:**
-The ABC logic optimization engine inside Yosys is the key to high-quality results. It uses Boolean satisfiability (SAT) and BDD-based techniques to minimize the logic cone before mapping to library cells. Running `synth` without `abc -liberty` produces a higher gate count; adding `abc` is essential for production-quality synthesis.
+**5. Importance of `abc`:**
+The Boolean satisfiability and BDD optimizations made available by `abc` logic optimization engine from Yosys allow reducing logic cones prior to mapping library cells. Synthesis without `abc` -liberty leads to significantly higher gate count. Thus, using `abc` is crucial for industrial synthesis quality.
 
 ---
 
 ## Summary
 
-This 12-hour workshop covered the complete RTL-to-gates flow, from writing Verilog HDL through functional simulation and waveform analysis to technology-mapped synthesis with a real open-source PDK. The modules studied - a 2:1 MUX, hierarchical AND-OR logic, three flavours of D flip-flop, and zero-logic arithmetic - were specifically chosen to exercise every major synthesis behaviour: combinational MUX inference, hierarchical vs. flat netlist strategies, asynchronous vs. synchronous sequential control, and constant-folding arithmetic optimization. The SKY130 library grounded every synthesis result in real silicon cells, making this lab directly applicable to actual ASIC and FPGA physical implementation flows.
+This 12-hour training course involved the entire RTL to gates pipeline, including Verilog HDL programming, functional simulation and waveform observation, technology-mapped synthesis using an open source PDK. The circuits selected for study included the 2:1 multiplexer, hierarchical AND/OR logic, three types of D flip-flops, and zero logic arithmetic, all selected to demonstrate the major synthesis behaviors, namely, MUX inference, hierarchical vs flat netlist design approaches, asynchronous vs synchronous sequential circuits, and arithmetic constant folding. The SKY130 cell library provided the basis for each synthesis result into silicon transistors, making this training relevant to practical chip design and fabrication processes.
 
 ---
 

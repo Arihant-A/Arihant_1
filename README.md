@@ -1,6 +1,5 @@
 # VSD RTL Design & Synthesis Workshop — 12-Hour Lab Assessment
 
-> **Candidate Assessment Report**
 > **Tools Used:** Icarus Verilog · GTKWave · Yosys · SKY130 PDK
 > **Platform:** GitHub Codespaces (Ubuntu)
 > 

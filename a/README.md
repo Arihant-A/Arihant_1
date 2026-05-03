@@ -1,21 +1,21 @@
-# ⚙️ VSD RTL Design & Synthesis Workshop
+# VSD RTL Design & Synthesis Workshop
 ### FPGA Internship Evaluation - 12-Hour Lab Assessment
 
 > **Toolchain:** Icarus Verilog (Simulation) · GTKWave (Waveform Analysis) · Yosys (Synthesis) · SKY130 PDK (Standard Cell Library)
 
 ---
 
-## 📌 Table of Contents
+## Table of Contents
 
 1. [Project Overview](#project-overview)
 2. [Why Each File Type Matters](#why-each-file-type-matters)
 3. [Lab Environment & Toolchain Philosophy](#lab-environment--toolchain-philosophy)
 4. [Repository Structure](#repository-structure)
 5. [File Index](#file-index)
-6. [Lab 1 - 2:1 Multiplexer (`good_mux`)](#lab-1--21-multiplexer-good_mux)
-7. [Lab 2 - Multiple Modules: Hierarchy vs Flatten vs Submodule](#lab-2--multiple-modules-hierarchy-vs-flatten-vs-submodule)
-8. [Lab 3 - D Flip-Flops (Three Reset/Set Variants)](#lab-3--d-flip-flops-three-resetset-variants)
-9. [Lab 4 - Special Case Arithmetic: Multiply by 2 and Multiply by 9](#lab-4--special-case-arithmetic-multiply-by-2-and-multiply-by-9)
+6. [2:1 Multiplexer (`good_mux`)](#lab-1--21-multiplexer-good_mux)
+7. [Multiple Modules: Hierarchy vs Flatten vs Submodule](#lab-2--multiple-modules-hierarchy-vs-flatten-vs-submodule)
+8. [D Flip-Flops (Three Reset/Set Variants)](#lab-3--d-flip-flops-three-resetset-variants)
+9. [Special Case Arithmetic: Multiply by 2 and Multiply by 9](#lab-4--special-case-arithmetic-multiply-by-2-and-multiply-by-9)
 10. [Key Learnings & Observations](#key-learnings--observations)
 11. [Synthesis vs. Simulation - A Deep Comparison](#synthesis-vs-simulation--a-deep-comparison)
 
@@ -186,7 +186,7 @@ VSD RTL Design & Synthesis Workshop/
 
 ---
 
-## Lab 1 - 2:1 Multiplexer (`good_mux`)
+## 2:1 Multiplexer (`good_mux`)
 
 ### 1.1 RTL Description
 
@@ -281,7 +281,7 @@ This confirms that the `always @(*) if-else` construct was correctly recognized 
 
 ---
 
-## Lab 2 - Multiple Modules: Hierarchy vs Flatten vs Submodule
+## Multiple Modules: Hierarchy vs Flatten vs Submodule
 
 This lab is the most conceptually important in the workshop. It demonstrates three distinct synthesis strategies for the same design and shows how each strategy affects the resulting netlist and schematic. Understanding the difference between **hierarchical**, **flattened**, and **submodule-only** synthesis is a critical skill for any RTL engineer.
 
@@ -469,7 +469,7 @@ The output `y` in simulation should implement `y = (a & b) | c`. Checking a few 
 
 ---
 
-## Lab 3 - D Flip-Flops (Three Reset/Set Variants)
+## D Flip-Flops (Three Reset/Set Variants)
 
 Sequential logic synthesis is fundamentally different from combinational synthesis. Flip-flops represent **state** in a design - they remember a value across clock cycles. How the flip-flop initializes or resets to a known state is a critical design decision. This lab explores all three major variants.
 
@@ -665,7 +665,7 @@ This block diagram reveals a **fundamentally different synthesis result** compar
 
 ---
 
-## Lab 4 - Special Case Arithmetic: Multiply by 2 and Multiply by 9
+## Special Case Arithmetic: Multiply by 2 and Multiply by 9
 
 This lab demonstrates one of the most important optimizations in digital design: **recognizing that certain arithmetic operations require zero logic gates** when the operands are powers of 2 (or sums of powers of 2).
 
